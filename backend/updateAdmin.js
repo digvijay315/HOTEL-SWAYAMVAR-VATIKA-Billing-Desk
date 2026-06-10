@@ -9,7 +9,7 @@ mongoose.connect(process.env.MONGODB_URI).then(async () => {
   let admin = await User.findOne({ role: "admin" });
   if (admin) {
     admin.email = "admin@gmail.com";
-    admin.password = "password-admin@123";
+    admin.password = "admin@123";
     await admin.save();
     console.log("Admin updated successfully");
   } else {
