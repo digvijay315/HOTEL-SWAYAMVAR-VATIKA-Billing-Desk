@@ -1,8 +1,8 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:5000/",
-  // baseURL:"https://billingapp-8iiq.onrender.com/"
+  // baseURL: "http://localhost:5000/",
+  baseURL:"https://hotel-swayamvar-vatika-billing-desk.onrender.com/"
 });
 
 let activeRequests = 0;
