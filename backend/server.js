@@ -49,16 +49,16 @@ const seedAdmin = async () => {
       console.log("No admin accounts found. Seeding default admin...");
       await User.create({
         name: "Rahul Chandan",
-        email: "admin@marwaribasa.com",
-        password: "adminpassword123", // Hashes automatically via pre-save hook
+        email: "admin@gmail.com",
+        password: "admin@123", // Hashes automatically via pre-save hook
         role: "admin",
         mobile: "9999999999",
         age: 45,
-        address: "Hotel Swayamwar Vatika",
+        address: "HOTEL SWAYAMVAR VATIKA",
       });
       console.log("Default admin created successfully!");
-      console.log("Email: admin@marwaribasa.com");
-      console.log("Password: adminpassword123");
+      console.log("Email: admin@gmail.com");
+      console.log("Password: password-admin@123");
     }
   } catch (error) {
     console.error(`Error seeding admin: ${error.message}`);

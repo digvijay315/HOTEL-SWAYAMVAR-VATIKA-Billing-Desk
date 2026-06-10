@@ -104,9 +104,9 @@ export default function Login({ onLoginSuccess }) {
         </form>
 
         {/* Footer tip */}
-        <div className="mt-8 text-center text-xs text-slate-500 border-t border-slate-800/40 pt-6">
+      {/* <div className="mt-8 text-center text-xs text-slate-500 border-t border-slate-800/40 pt-6">
           <p>Admin credentials: <code className="text-amber-400/80">admin@marwaribasa.com</code> / <code className="text-amber-400/80">adminpassword123</code></p>
-        </div>
+        </div>*/}
       </div>
     </div>
   );
