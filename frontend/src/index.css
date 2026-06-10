@@ -1,0 +1,215 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'Outfit', sans-serif;
+    @apply bg-slate-950 text-slate-100 antialiased min-h-screen;
+    background-image: 
+      radial-gradient(at 0% 0%, hsla(222,47%,11%,1) 0, transparent 50%),
+      radial-gradient(at 50% 0%, hsla(25,30%,12%,1) 0, transparent 50%),
+      radial-gradient(at 100% 0%, hsla(222,47%,11%,1) 0, transparent 50%);
+    background-attachment: fixed;
+  }
+}
+
+/* Glassmorphism utility */
+.glass {
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glass-card {
+  background: rgba(30, 41, 59, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(186, 133, 81, 0.15); /* Tint of gold */
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.5);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(186, 133, 81, 0.3);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(186, 133, 81, 0.6);
+}
+
+/* Print Invoice styling - overrides display during window.print() */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .print-modal-overlay {
+    position: absolute !important;
+    background: white !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    inset: 0 !important;
+    z-index: 1000 !important;
+  }
+
+  @page {
+    margin: 1cm;
+  }
+}
+
+/* Light Mode Theme Overrides */
+body.light {
+  background-color: #f8fafc !important; /* slate-50 */
+  background-image: 
+    radial-gradient(at 0% 0%, hsla(210, 40%, 96.1%, 1) 0, transparent 50%),
+    radial-gradient(at 50% 0%, hsla(35, 30%, 95%, 1) 0, transparent 50%),
+    radial-gradient(at 100% 0%, hsla(210, 40%, 96.1%, 1) 0, transparent 50%) !important;
+  color: #0f172a !important; /* slate-900 */
+}
+
+body.light .glass {
+  background: rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
+}
+
+body.light .glass-card {
+  background: rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(186, 133, 81, 0.22) !important; /* light gold */
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -4px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Text color overrides */
+body.light .text-white,
+body.light .text-slate-100,
+body.light .text-slate-200 {
+  color: #0f172a !important; /* slate-900 */
+}
+
+body.light .text-slate-300,
+body.light .text-slate-350 {
+  color: #334155 !important; /* slate-700 */
+}
+
+body.light .text-slate-400 {
+  color: #475569 !important; /* slate-600 */
+}
+
+body.light .text-slate-500 {
+  color: #64748b !important; /* slate-500 */
+}
+
+/* Background overrides */
+body.light .bg-slate-900,
+body.light .bg-slate-900\/60,
+body.light .bg-slate-900\/40,
+body.light .bg-slate-900\/30,
+body.light .bg-slate-905\/40,
+body.light .bg-slate-950\/20,
+body.light .bg-slate-850 {
+  background-color: #f1f5f9 !important; /* slate-100 */
+  color: #0f172a !important;
+}
+
+body.light .bg-slate-900\/10,
+body.light .bg-slate-900\/20 {
+  background-color: #e2e8f0 !important; /* slate-200 */
+}
+
+body.light .bg-slate-905 {
+  background-color: #f8fafc !important; /* slate-50 */
+}
+
+body.light .bg-slate-950 {
+  background-color: #f8fafc !important;
+}
+
+/* Border overrides */
+body.light .border-slate-800,
+body.light .border-slate-800\/80,
+body.light .border-slate-850,
+body.light .divide-slate-800\/50,
+body.light .divide-slate-800\/60,
+body.light .border-gold-800\/15,
+body.light .border-gold-800\/20,
+body.light .border-gold-800\/10 {
+  border-color: #cbd5e1 !important; /* slate-300 */
+}
+
+body.light .divide-y > * + * {
+  border-color: #e2e8f0 !important;
+}
+
+body.light input,
+body.light select {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important; /* slate-300 */
+  color: #0f172a !important;
+}
+
+body.light input:focus,
+body.light select:focus {
+  border-color: #ba8551 !important; /* gold-500 */
+}
+
+/* Table hover override */
+body.light .hover\:bg-slate-900\/30:hover {
+  background-color: rgba(226, 232, 240, 0.6) !important;
+}
+
+body.light .hover\:bg-slate-850:hover {
+  background-color: #e2e8f0 !important;
+}
+
+body.light .hover\:text-slate-200:hover {
+  color: #0f172a !important;
+}
+
+body.light .hover\:bg-slate-905\/40:hover {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* Lucide and amber items active states */
+body.light .text-amber-500 {
+  color: #d97706 !important; /* amber-600 */
+}
+body.light .text-amber-400 {
+  color: #b45309 !important; /* amber-700 */
+}
+body.light .text-emerald-400 {
+  color: #059669 !important; /* emerald-600 */
+}
