@@ -53,7 +53,7 @@ const getDateRange = (filterType, specificDate) => {
 // @route   POST /api/invoices
 // @access  Private
 const createInvoice = async (req, res) => {
-  const { customerName, customerMobile, customerEmail, items } = req.body;
+  const { customerName, customerMobile, customerEmail, items, roomBookingId } = req.body;
 
   try {
     if (!customerName || !customerMobile || !items || items.length === 0) {
@@ -77,6 +77,11 @@ const createInvoice = async (req, res) => {
     const tax = Math.round((subTotal * 0.05) * 100) / 100; // 5% GST
     const grandTotal = Math.round((subTotal + tax) * 100) / 100;
 
+    let invoiceStatus = 'Paid';
+    if (roomBookingId) {
+      invoiceStatus = 'Added to Room';
+    }
+
     const invoice = await Invoice.create({
       customerName,
       customerMobile,
@@ -85,8 +90,16 @@ const createInvoice = async (req, res) => {
       subTotal,
       tax,
       grandTotal,
+      status: invoiceStatus,
+      roomBookingId: roomBookingId || null,
       createdBy: req.user._id,
     });
+
+    if (roomBookingId) {
+      await RoomBooking.findByIdAndUpdate(roomBookingId, {
+        $push: { restaurantBills: invoice._id }
+      });
+    }
 
     // Populate creator's name
     const populatedInvoice = await Invoice.findById(invoice._id).populate("createdBy", "name");

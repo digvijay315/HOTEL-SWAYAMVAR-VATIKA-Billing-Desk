@@ -20,8 +20,13 @@ export default function StaffRoomBooking() {
   const [activeWebcam, setActiveWebcam] = useState(null);
   const webcamRef = useRef(null);
   const [advanceAmount, setAdvanceAmount] = useState(0);
-  const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [uploadingDoc, setUploadingDoc] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [hasGST, setHasGST] = useState(false);
+  const [gstNumber, setGstNumber] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [companyAddress, setCompanyAddress] = useState("");
+  const [verifyingGST, setVerifyingGST] = useState(false);
 
   // Check out state
   const [activeBooking, setActiveBooking] = useState(null);
@@ -51,6 +56,10 @@ export default function StaffRoomBooking() {
       setNumGuests(1);
       setGuests([{ name: "", age: "", phone: "", idType: "Aadhar", idNumber: "", documentImage: null, personPhoto: null }]);
       setAdvanceAmount(0);
+      setHasGST(false);
+      setGstNumber("");
+      setCompanyName("");
+      setCompanyAddress("");
       setShowCheckInModal(true);
     } else {
       // Find active booking for this room
@@ -68,7 +77,14 @@ export default function StaffRoomBooking() {
           // Removed grace period to strictly charge next day after 24 hours
           let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
           if (diffDays === 0) diffDays = 1;
-          setManualTotalAmount(diffDays * room.price);
+          
+          let roomTotal = diffDays * room.price;
+          let restaurantTotal = 0;
+          if (active.restaurantBills && active.restaurantBills.length > 0) {
+            restaurantTotal = active.restaurantBills.reduce((s, bill) => s + bill.grandTotal, 0);
+          }
+          
+          setManualTotalAmount(roomTotal + restaurantTotal);
 
           setShowCheckOutModal(true);
         } else {
@@ -153,7 +169,11 @@ export default function StaffRoomBooking() {
       await api.post("/api/room-bookings/checkin", {
         roomId: selectedRoom._id,
         guests: guests,
-        advanceAmount: Number(advanceAmount) || 0
+        advanceAmount: Number(advanceAmount) || 0,
+        hasGST,
+        gstNumber: hasGST ? gstNumber : "",
+        companyName: hasGST ? companyName : "",
+        companyAddress: hasGST ? companyAddress : ""
       });
 
       showSuccess("Success", "Check-in successful");
@@ -180,6 +200,55 @@ export default function StaffRoomBooking() {
     setGuests(newGuests);
   };
   
+  const handleVerifyGST = async () => {
+    if (!gstNumber || gstNumber.length !== 15) {
+      showError("Invalid GST", "Please enter a valid 15-digit GST Number");
+      return;
+    }
+    
+    setVerifyingGST(true);
+    try {
+      const res = await api.get(`/api/room-bookings/verify-gst/${gstNumber}`);
+      if (res.data.success) {
+        setCompanyName(res.data.data.businessName || "");
+        setCompanyAddress(res.data.data.address || "");
+        showSuccess("Verified", "GST Details fetched successfully!");
+      } else {
+        showError("Failed", res.data.message || "Failed to verify GST");
+      }
+    } catch (error) {
+      showError("Verification Failed", "Could not verify GST. Please check the number or try again.");
+      console.error(error);
+    } finally {
+      setVerifyingGST(false);
+    }
+  };
+
+  const handlePhoneBlur = async (index, phone) => {
+    if (!phone || phone.length < 10) return;
+    
+    try {
+      const res = await api.get(`/api/room-bookings/guest/${phone}`);
+      if (res.data.success && res.data.data) {
+        const pastGuest = res.data.data;
+        const updated = [...guests];
+        updated[index] = {
+          ...updated[index],
+          name: updated[index].name || pastGuest.name || "",
+          age: updated[index].age || pastGuest.age || "",
+          idType: pastGuest.idType || "Aadhar",
+          idNumber: updated[index].idNumber || pastGuest.idNumber || "",
+          documentImage: updated[index].documentImage || pastGuest.documentImage || null,
+          personPhoto: updated[index].personPhoto || pastGuest.personPhoto || null
+        };
+        setGuests(updated);
+        showSuccess("Guest Found", "Previous guest details loaded automatically!");
+      }
+    } catch (error) {
+      // Simply ignore if guest not found
+    }
+  };
+
   const updateGuestField = (index, field, value) => {
     const updated = [...guests];
     updated[index][field] = value;
@@ -311,6 +380,7 @@ export default function StaffRoomBooking() {
                             required={index === 0}
                             value={guest.phone}
                             onChange={(e) => updateGuestField(index, "phone", e.target.value)}
+                            onBlur={(e) => handlePhoneBlur(index, e.target.value)}
                             className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"
                           />
                         </div>
@@ -384,7 +454,7 @@ export default function StaffRoomBooking() {
               </div>
               
               <div className="sticky bottom-0 bg-slate-900 pt-4 pb-2 z-10 mt-6 border-t border-slate-700 shadow-[0_-10px_15px_-3px_rgba(15,23,42,0.8)]">
-                <div className="flex flex-col md:flex-row items-center gap-4">
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
                   <div className="w-full md:w-1/3">
                     <label className="block text-sm text-slate-300 mb-1">Advance Amount Paid (₹)</label>
                     <input
@@ -395,7 +465,47 @@ export default function StaffRoomBooking() {
                       className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white"
                     />
                   </div>
-                  <div className="w-full md:w-2/3 flex gap-3 self-end">
+                  <div className="w-full md:w-1/3 flex flex-col">
+                    <label className="flex items-center gap-2 text-sm text-slate-300 mb-1 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={hasGST}
+                        onChange={(e) => setHasGST(e.target.checked)}
+                        className="w-4 h-4 accent-amber-500 rounded border-slate-700 bg-slate-950"
+                      />
+                      Add GST Number
+                    </label>
+                    {hasGST ? (
+                      <div className="flex flex-col gap-2">
+                        <div className="flex gap-2 w-full">
+                          <input
+                            type="text"
+                            placeholder="Enter GST Number"
+                            value={gstNumber}
+                            onChange={(e) => setGstNumber(e.target.value)}
+                            className="flex-1 w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleVerifyGST}
+                            disabled={verifyingGST || !gstNumber}
+                            className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 hover:bg-emerald-500/30 px-3 py-2.5 rounded-xl font-bold text-sm transition-colors whitespace-nowrap disabled:opacity-50"
+                          >
+                            {verifyingGST ? "..." : "Verify"}
+                          </button>
+                        </div>
+                        {companyName && (
+                          <div className="text-xs text-slate-400 bg-slate-950/50 p-2 rounded-lg border border-slate-700/50">
+                            <p className="font-bold text-amber-500">{companyName}</p>
+                            <p className="truncate">{companyAddress}</p>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="h-[46px]"></div>
+                    )}
+                  </div>
+                  <div className="w-full md:w-1/3 flex gap-3 self-end">
                     <button
                       type="button"
                       onClick={() => setShowCheckInModal(false)}

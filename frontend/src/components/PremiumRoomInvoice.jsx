@@ -171,6 +171,31 @@ export default function PremiumRoomInvoice({ booking, onClose }) {
                     ₹{(booking.room?.price * diffDays).toFixed(2)}
                   </td>
                 </tr>
+                {booking.restaurantBills && booking.restaurantBills.length > 0 && booking.restaurantBills.map((bill, billIndex) => (
+                  <React.Fragment key={bill._id}>
+                    <tr className="bg-amber-100/50">
+                      <td colSpan="4" className="py-2 px-2 text-xs font-bold text-amber-800 border-t border-amber-200">
+                        Restaurant Order #{bill.invoiceNumber || bill._id.substring(bill._id.length - 6)}
+                      </td>
+                    </tr>
+                    {bill.items && bill.items.map((item, itemIndex) => (
+                      <tr key={`${bill._id}-${itemIndex}`} className="text-slate-700 bg-amber-50/30 text-sm">
+                        <td className="py-2 pl-4 font-medium">- {item.name}</td>
+                        <td className="py-2 text-center">{item.quantity}</td>
+                        <td className="py-2 text-right font-mono">₹{item.price?.toFixed(2)}</td>
+                        <td className="py-2 text-right font-mono font-medium">
+                          ₹{(item.price * item.quantity).toFixed(2)}
+                        </td>
+                      </tr>
+                    ))}
+                    {bill.tax > 0 && (
+                      <tr className="text-slate-600 bg-amber-50/30 text-xs">
+                        <td colSpan="3" className="py-1 text-right italic">GST (5%)</td>
+                        <td className="py-1 text-right font-mono">₹{bill.tax?.toFixed(2)}</td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                ))}
               </tbody>
             </table>
 
@@ -282,8 +307,31 @@ export default function PremiumRoomInvoice({ booking, onClose }) {
                 <td className="py-2">Room {booking.room?.roomNumber} ({booking.room?.type})</td>
                 <td className="py-2 text-center">{diffDays}</td>
                 <td className="py-2 text-right">₹{booking.room?.price}</td>
-                <td className="py-2 text-right">₹{booking.totalAmount}</td>
+                <td className="py-2 text-right">₹{booking.room?.price * diffDays}</td>
               </tr>
+              {booking.restaurantBills && booking.restaurantBills.length > 0 && booking.restaurantBills.map((bill) => (
+                <React.Fragment key={bill._id}>
+                  <tr className="bg-gray-100">
+                    <td colSpan="4" className="py-1 px-1 font-bold italic text-gray-700 border-t border-gray-300">
+                      Restaurant Order #{bill.invoiceNumber || bill._id.substring(bill._id.length - 6)}
+                    </td>
+                  </tr>
+                  {bill.items && bill.items.map((item, i) => (
+                    <tr key={`${bill._id}-${i}`}>
+                      <td className="py-1 pl-3 text-gray-700">- {item.name}</td>
+                      <td className="py-1 text-center text-gray-700">{item.quantity}</td>
+                      <td className="py-1 text-right text-gray-700">₹{item.price}</td>
+                      <td className="py-1 text-right text-gray-700">₹{item.price * item.quantity}</td>
+                    </tr>
+                  ))}
+                  {bill.tax > 0 && (
+                    <tr>
+                      <td colSpan="3" className="py-1 text-right text-gray-500 italic">GST (5%)</td>
+                      <td className="py-1 text-right text-gray-500">₹{bill.tax}</td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              ))}
             </tbody>
           </table>
           <div className="border-t border-black pt-2 mt-4 flex justify-end text-xs font-bold">

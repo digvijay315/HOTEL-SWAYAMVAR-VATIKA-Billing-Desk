@@ -19,6 +19,22 @@ const roomBookingSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  hasGST: {
+    type: Boolean,
+    default: false
+  },
+  gstNumber: {
+    type: String,
+    default: ''
+  },
+  companyName: {
+    type: String,
+    default: ''
+  },
+  companyAddress: {
+    type: String,
+    default: ''
+  },
   checkInTime: {
     type: Date,
     default: Date.now
@@ -36,6 +52,10 @@ const roomBookingSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  restaurantBills: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Invoice'
+  }],
   staffId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

@@ -37,6 +37,11 @@ exports.getAllBookings = async (req, res) => {
         };
       }
     }
+    
+    // Add support for active filter
+    if (filter === 'active') {
+      query.status = 'Checked-In';
+    }
 
     // Search by guest name or room number (complex across populated fields, so we do basic guest name search if provided)
     if (search) {
@@ -49,6 +54,7 @@ exports.getAllBookings = async (req, res) => {
     const bookings = await RoomBooking.find(query)
       .populate('room', 'roomNumber type price')
       .populate('staffId', 'name')
+      .populate('restaurantBills')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
@@ -72,7 +78,7 @@ exports.getAllBookings = async (req, res) => {
 // @access  Private (Staff)
 exports.checkIn = async (req, res) => {
   try {
-    const { roomId, guests, advanceAmount } = req.body;
+    const { roomId, guests, advanceAmount, hasGST, gstNumber, companyName, companyAddress } = req.body;
 
     const room = await Room.findById(roomId);
     if (!room) {
@@ -88,6 +94,10 @@ exports.checkIn = async (req, res) => {
       room: roomId,
       guests,
       advanceAmount: Number(advanceAmount) || 0,
+      hasGST: hasGST || false,
+      gstNumber: hasGST ? gstNumber : '',
+      companyName: hasGST ? companyName : '',
+      companyAddress: hasGST ? companyAddress : '',
       staffId: req.user._id,
       status: 'Checked-In'
     });
@@ -107,7 +117,9 @@ exports.checkIn = async (req, res) => {
 // @access  Private (Staff)
 exports.checkOut = async (req, res) => {
   try {
-    const booking = await RoomBooking.findById(req.params.id).populate('room');
+    const booking = await RoomBooking.findById(req.params.id)
+      .populate('room')
+      .populate('restaurantBills');
 
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
@@ -139,7 +151,12 @@ exports.checkOut = async (req, res) => {
     if (req.body.manualTotalAmount !== undefined && req.body.manualTotalAmount !== null) {
       booking.totalAmount = Number(req.body.manualTotalAmount);
     } else {
-      booking.totalAmount = diffDays * booking.room.price;
+      let roomTotal = diffDays * booking.room.price;
+      let restaurantTotal = 0;
+      if (booking.restaurantBills && booking.restaurantBills.length > 0) {
+        restaurantTotal = booking.restaurantBills.reduce((sum, bill) => sum + bill.grandTotal, 0);
+      }
+      booking.totalAmount = roomTotal + restaurantTotal;
     }
     
     await booking.save();
@@ -150,6 +167,90 @@ exports.checkOut = async (req, res) => {
     await room.save();
 
     res.json({ success: true, data: booking });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Verify GST Number
+// @route   GET /api/room-bookings/verify-gst/:gstNumber
+// @access  Private (Staff)
+exports.verifyGST = async (req, res) => {
+  try {
+    const { gstNumber } = req.params;
+    
+    // Check if the user has provided an API key in the environment for AppyFlow or Razorpay
+    // Example: process.env.GST_API_KEY
+    
+    if (process.env.GST_API_KEY) {
+      const axios = require('axios');
+      try {
+        const response = await axios.get(`https://appyflow.in/api/verifyGST?gstNo=${gstNumber}&key_secret=${process.env.GST_API_KEY}`);
+        
+        if (response.data && !response.data.error) {
+          const info = response.data.taxpayerInfo || {};
+          const addrObj = info.pradr?.addr || {};
+          const addressString = `${addrObj.bno || ''} ${addrObj.st || ''} ${addrObj.loc || ''}, ${addrObj.dst || ''}, ${addrObj.stcd || ''} - ${addrObj.pncd || ''}`.replace(/\s+/g, ' ').trim() || "Address verified";
+
+          return res.json({ 
+            success: true, 
+            data: {
+              businessName: info.tradeNam || info.lgnm || "Unknown",
+              address: addressString
+            } 
+          });
+        } else {
+          return res.status(400).json({ success: false, message: response.data?.message || 'Invalid GST or API Error' });
+        }
+      } catch (err) {
+        console.error("GST API Error:", err.response?.data || err.message);
+        return res.status(400).json({ 
+          success: false, 
+          message: err.response?.data?.message || err.response?.data?.error || "GST Verification failed from provider. Check API Key or GST No."
+        });
+      }
+    }
+
+    // Fallback: Mock provider response if no API key is provided so it still works for demo
+    // In production, the client must configure their .env with a valid API Key
+    const mockData = {
+      businessName: "Verified Company Pvt Ltd (Mock)",
+      address: "123 Business Avenue, City Center, 400001 (Mock Data)",
+      status: "Active"
+    };
+
+    // A small delay to simulate network request
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    res.json({ success: true, data: mockData });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Get previous guest details by phone number
+// @route   GET /api/room-bookings/guest/:phone
+// @access  Private (Staff)
+exports.getGuestByPhone = async (req, res) => {
+  try {
+    const { phone } = req.params;
+    
+    // Find the most recent booking that has a guest with this phone number
+    const booking = await RoomBooking.findOne({ 'guests.phone': phone })
+      .sort({ createdAt: -1 });
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'No guest found with this phone number' });
+    }
+
+    // Extract the specific guest from the array
+    const guest = booking.guests.find(g => g.phone === phone);
+
+    if (!guest) {
+      return res.status(404).json({ success: false, message: 'No guest found with this phone number' });
+    }
+
+    res.json({ success: true, data: guest });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

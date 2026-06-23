@@ -23,10 +23,27 @@ export default function StaffBilling() {
   const [generatedInvoice, setGeneratedInvoice] = useState(null);
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState(["All"]);
+  
+  // Room Billing feature
+  const [billType, setBillType] = useState("Walk-in"); // "Walk-in" or "Room"
+  const [activeBookings, setActiveBookings] = useState([]);
+  const [selectedBookingId, setSelectedBookingId] = useState("");
 
   useEffect(() => {
     fetchDishes();
+    fetchActiveBookings();
   }, []);
+
+  const fetchActiveBookings = async () => {
+    try {
+      const res = await api.get("api/room-bookings?filter=active");
+      if (res.data.success) {
+        setActiveBookings(res.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching active rooms:", error);
+    }
+  };
 
   const fetchDishes = async () => {
     try {
@@ -118,30 +135,63 @@ export default function StaffBilling() {
       showError("Missing Fields", "Please fill in Customer Name and Mobile number.");
       return;
     }
+    if (billType === "Room" && !selectedBookingId) {
+      showError("Missing Room", "Please select a room to add the bill to.");
+      return;
+    }
 
     setLoading(true);
     try {
-      const res = await api.post("api/invoices", {
+      const payload = {
         customerName,
         customerMobile,
         customerEmail,
         items: cart,
-      });
+      };
+      
+      if (billType === "Room" && selectedBookingId) {
+        payload.roomBookingId = selectedBookingId;
+      }
+
+      const res = await api.post("api/invoices", payload);
 
       if (res.data.success) {
-        setGeneratedInvoice(res.data.invoice);
+        if (billType === "Room") {
+          import("../utils/alerts").then(({ showSuccess }) => {
+            showSuccess("Added to Room", "Restaurant bill successfully added to the room tab.");
+          });
+        } else {
+          setGeneratedInvoice(res.data.invoice);
+        }
+        
         // Clear cart & inputs
         setCart([]);
         setCustomerName("");
         setCustomerMobile("");
         setCustomerEmail("");
         setReceivedAmount("");
+        setSelectedBookingId("");
       }
     } catch (error) {
       console.error("Checkout failed:", error);
       showError("Checkout Failed", error.response?.data?.message || "Checkout failed");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRoomSelect = (e) => {
+    const bId = e.target.value;
+    setSelectedBookingId(bId);
+    if (bId) {
+      const booking = activeBookings.find(b => b._id === bId);
+      if (booking && booking.guests && booking.guests.length > 0) {
+        setCustomerName(booking.guests[0].name);
+        setCustomerMobile(booking.guests[0].phone);
+      }
+    } else {
+      setCustomerName("");
+      setCustomerMobile("");
     }
   };
 
@@ -315,7 +365,44 @@ export default function StaffBilling() {
             <h2 className="font-bold text-sm text-slate-200">Customer Details</h2>
           </div>
 
+          <div className="flex bg-slate-900 rounded-lg p-1 mb-4">
+            <button
+              type="button"
+              onClick={() => setBillType("Walk-in")}
+              className={`flex-1 text-xs py-1.5 rounded-md font-semibold transition-all ${billType === "Walk-in" ? "bg-amber-500/20 text-amber-500" : "text-slate-400 hover:text-slate-300"}`}
+            >
+              Walk-in
+            </button>
+            <button
+              type="button"
+              onClick={() => setBillType("Room")}
+              className={`flex-1 text-xs py-1.5 rounded-md font-semibold transition-all ${billType === "Room" ? "bg-amber-500/20 text-amber-500" : "text-slate-400 hover:text-slate-300"}`}
+            >
+              Room Guest
+            </button>
+          </div>
+
           <form onSubmit={handleCheckout} className="space-y-4">
+            {billType === "Room" && (
+              <div>
+                <label className="block text-[10px] font-bold text-amber-500 uppercase tracking-wider mb-1">
+                  Select Room *
+                </label>
+                <select
+                  required
+                  value={selectedBookingId}
+                  onChange={handleRoomSelect}
+                  className="w-full bg-amber-500/10 border border-amber-500/30 text-amber-500 rounded-xl px-3 py-2 text-xs outline-none focus:border-amber-500"
+                >
+                  <option value="">-- Choose Active Room --</option>
+                  {activeBookings.map(b => (
+                    <option key={b._id} value={b._id}>
+                      Room {b.room?.roomNumber} ({b.guests?.[0]?.name})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div>
               <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                 Customer Name *
@@ -357,27 +444,31 @@ export default function StaffBilling() {
               />
             </div>
 
-            <div className="pt-2 border-t border-slate-800/60 mt-2">
-              <label className="block text-[10px] font-bold text-amber-500/80 uppercase tracking-wider mb-1">
-                Received Amount (₹)
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={receivedAmount}
-                onChange={(e) => setReceivedAmount(e.target.value)}
-                placeholder="Amount given by customer"
-                className="w-full bg-slate-900/60 border border-amber-500/30 text-amber-400 font-mono font-bold rounded-xl px-3 py-2 text-xs outline-none focus:border-amber-500"
-              />
-            </div>
+            {billType === "Walk-in" && (
+              <>
+                <div className="pt-2 border-t border-slate-800/60 mt-2">
+                  <label className="block text-[10px] font-bold text-amber-500/80 uppercase tracking-wider mb-1">
+                    Received Amount (₹)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={receivedAmount}
+                    onChange={(e) => setReceivedAmount(e.target.value)}
+                    placeholder="Amount given by customer"
+                    className="w-full bg-slate-900/60 border border-amber-500/30 text-amber-400 font-mono font-bold rounded-xl px-3 py-2 text-xs outline-none focus:border-amber-500"
+                  />
+                </div>
 
-            {receivedAmount !== "" && (
-              <div className="flex justify-between items-center bg-slate-900/40 border border-slate-800 rounded-xl p-3">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Return Amount:</span>
-                <span className={`font-mono font-bold text-sm ${returnAmount >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                  ₹{returnAmount.toFixed(2)}
-                </span>
-              </div>
+                {receivedAmount !== "" && (
+                  <div className="flex justify-between items-center bg-slate-900/40 border border-slate-800 rounded-xl p-3">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Return Amount:</span>
+                    <span className={`font-mono font-bold text-sm ${returnAmount >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      ₹{returnAmount.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+              </>
             )}
 
             <button
@@ -385,7 +476,7 @@ export default function StaffBilling() {
               disabled={loading || cart.length === 0}
               className="w-full py-3.5 bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-slate-950 font-bold rounded-xl shadow-lg shadow-amber-600/10 active:scale-[0.98] transition-all flex items-center justify-center text-xs disabled:opacity-50 mt-2"
             >
-              {loading ? "Generating Bill..." : "Create Invoice & Print"}
+              {loading ? "Processing..." : (billType === "Room" ? "Add Bill to Room" : "Create Invoice & Print")}
             </button>
           </form>
         </div>

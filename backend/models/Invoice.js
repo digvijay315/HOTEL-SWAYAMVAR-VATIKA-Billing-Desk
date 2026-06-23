@@ -55,6 +55,16 @@ const invoiceSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    roomBookingId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'RoomBooking',
+      default: null
+    },
+    status: {
+      type: String,
+      enum: ['Paid', 'Added to Room'],
+      default: 'Paid'
+    }
   },
   {
     timestamps: true,
