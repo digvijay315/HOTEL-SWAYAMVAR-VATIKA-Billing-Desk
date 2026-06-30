@@ -36,6 +36,11 @@ export default function Sidebar({ isOpen, closeSidebar }) {
       path: "/admin/rooms",
       icon: BedDouble,
     },
+    {
+      name: "Manage Tables",
+      path: "/admin/tables",
+      icon: UtensilsCrossed,
+    },
   ];
 
   return (

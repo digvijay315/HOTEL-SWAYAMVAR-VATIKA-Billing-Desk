@@ -30,6 +30,8 @@ app.use("/api/dishes", require("./routes/dishRoutes"));
 app.use("/api/invoices", require("./routes/invoiceRoutes"));
 app.use("/api/rooms", require("./routes/roomRoutes"));
 app.use("/api/room-bookings", require("./routes/roomBookingRoutes"));
+app.use("/api/tables", require("./routes/tableRoutes"));
+app.use("/api/orders", require("./routes/orderRoutes"));
 
 // Error handling middleware
 app.use((err, req, res, next) => {

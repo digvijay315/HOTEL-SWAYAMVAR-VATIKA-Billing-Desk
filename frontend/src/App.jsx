@@ -12,7 +12,9 @@ import AdminDishes from "./pages/AdminDishes";
 import AdminReports from "./pages/AdminReports";
 import AdminRooms from "./pages/AdminRooms";
 import AdminRoomReports from "./pages/AdminRoomReports";
+import AdminTables from "./pages/AdminTables";
 import StaffRoomBooking from "./pages/StaffRoomBooking";
+import StaffKotBilling from "./pages/StaffKotBilling";
 
 // Guard for Admin Routes
 const AdminRoute = ({ children, currentUser, handleLogout, theme, toggleTheme }) => {
@@ -203,6 +205,26 @@ export default function App() {
             <AdminRoute currentUser={currentUser} handleLogout={handleLogout} theme={theme} toggleTheme={toggleTheme}>
               <AdminDishes />
             </AdminRoute>
+          }
+        />
+
+        {/* Admin Tables Route */}
+        <Route
+          path="/admin/tables"
+          element={
+            <AdminRoute currentUser={currentUser} handleLogout={handleLogout} theme={theme} toggleTheme={toggleTheme}>
+              <AdminTables />
+            </AdminRoute>
+          }
+        />
+
+        {/* Staff KOT Billing Route */}
+        <Route
+          path="/staff/kot"
+          element={
+            <StaffRoute currentUser={currentUser} handleLogout={handleLogout} theme={theme} toggleTheme={toggleTheme}>
+              <StaffKotBilling />
+            </StaffRoute>
           }
         />
 

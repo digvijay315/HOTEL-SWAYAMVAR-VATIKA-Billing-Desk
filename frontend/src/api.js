@@ -129,4 +129,21 @@ api.interceptors.response.use(
   }
 );
 
+export const tableAPI = {
+  getTables: () => api.get("/api/tables"),
+  createTable: (data) => api.post("/api/tables", data),
+  updateTable: (id, data) => api.put(`/api/tables/${id}`, data),
+  deleteTable: (id) => api.delete(`/api/tables/${id}`),
+};
+
+export const orderAPI = {
+  createOrUpdateOrder: (data) => api.post("/api/orders", data),
+  getActiveOrder: (tableId) => api.get(`/api/orders/active/${tableId}`),
+  checkoutOrder: (orderId) => api.post(`/api/orders/${orderId}/checkout`),
+};
+
+export const roomBookingAPI = {
+  exportBookings: (params) => api.get("/api/room-bookings/export", { params, responseType: 'blob' }),
+};
+
 export default api;

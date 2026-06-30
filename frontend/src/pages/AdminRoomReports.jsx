@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { BookOpen, FileText, Image as ImageIcon, Search } from "lucide-react";
-import api from "../api";
+import { BookOpen, FileText, Image as ImageIcon, Search, Download } from "lucide-react";
+import api, { roomBookingAPI } from "../api";
 import Swal from "sweetalert2";
 import { showError, showAlert, getSwalConfig } from "../utils/alerts";
 import PremiumRoomInvoice from "../components/PremiumRoomInvoice";
@@ -89,6 +89,31 @@ export default function AdminRoomReports() {
     setSearchTerm(searchInput);
   };
 
+  const handleExport = async () => {
+    try {
+      setLoading(true);
+      const res = await roomBookingAPI.exportBookings({
+        filter: filterType === 'all' ? undefined : filterType,
+        startDate: filterType === 'custom' ? customStartDate : undefined,
+        endDate: filterType === 'custom' ? customEndDate : undefined,
+        search: searchTerm || undefined
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Room_Bookings_${new Date().toISOString().slice(0,10)}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error(error);
+      showError("Export Failed", "Could not export data to Excel.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleRowClick = (booking, e) => {
     // Prevent modal if clicking on buttons
     if (e.target.closest('button')) return;
@@ -148,6 +173,14 @@ export default function AdminRoomReports() {
               <Search className="w-4 h-4" />
             </button>
           </div>
+
+          <button 
+            onClick={handleExport}
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl transition-colors font-bold shadow-lg"
+          >
+            <Download className="w-4 h-4" />
+            Export
+          </button>
         </div>
       </div>
 

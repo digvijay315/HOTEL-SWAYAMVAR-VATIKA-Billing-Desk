@@ -237,7 +237,7 @@ export default function StaffBilling() {
         </div>
 
         {/* Dish Items Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4 flex-1">
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4 flex-1 content-start">
           {filteredDishes.length > 0 ? (
             filteredDishes.map((dish) => (
               <div
@@ -257,16 +257,16 @@ export default function StaffBilling() {
                     ₹{dish.price}
                   </span>
                 </div>
-                <div className="p-4 flex-1 flex flex-col justify-between gap-2">
+                <div className="p-2.5 flex flex-col gap-1.5 flex-1">
                   <div>
-                    <h3 className="font-bold text-sm text-slate-100 group-hover:text-amber-400 transition-colors">
+                    <h3 className="font-bold text-xs sm:text-sm text-slate-100 group-hover:text-amber-400 transition-colors leading-tight line-clamp-1">
                       {dish.name}
                     </h3>
-                    <p className="text-[10px] text-slate-500 font-medium mt-0.5 uppercase tracking-wider">
+                    <p className="text-[9px] text-slate-500 font-medium uppercase tracking-wider">
                       {dish.category}
                     </p>
                   </div>
-                  <button className="w-full py-1.5 bg-slate-900 border border-slate-800 hover:border-amber-500/20 group-hover:bg-amber-600/10 group-hover:text-amber-400 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1 transition-all">
+                  <button className="w-full mt-auto py-1.5 bg-slate-900 border border-slate-800 hover:border-amber-500/20 group-hover:bg-amber-600/10 group-hover:text-amber-400 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1 transition-all">
                     <span>Add to Cart</span>
                     <ArrowUpRight className="w-3 h-3" />
                   </button>

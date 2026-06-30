@@ -1,10 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const { getAllBookings, checkIn, checkOut, verifyGST, getGuestByPhone } = require('../controllers/roomBookingController');
+const { getAllBookings, checkIn, checkOut, verifyGST, getGuestByPhone, exportBookingsToExcel } = require('../controllers/roomBookingController');
 const { protect } = require('../middleware/auth');
 
 router.route('/')
   .get(protect, getAllBookings);
+
+router.route('/export')
+  .get(protect, exportBookingsToExcel);
 
 router.route('/checkin')
   .post(protect, checkIn);
