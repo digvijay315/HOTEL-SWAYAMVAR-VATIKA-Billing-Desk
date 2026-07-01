@@ -18,12 +18,10 @@ export default function Navbar({ currentUser, onLogout, theme, toggleTheme, togg
           </button>
         )}
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate("/")}>
-          <div className="bg-gradient-to-tr from-amber-600 to-yellow-400 p-2 sm:p-2.5 rounded-xl text-slate-950 shadow-lg shadow-amber-500/20 hidden sm:block">
-            <Coffee className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5]" />
-          </div>
+          <img src="/logo.jpg" alt="Logo" className="w-10 h-10 object-contain rounded-lg" />
           <div>
-            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-white font-serif leading-tight">
-              HOTEL SWAYAMVAR VATIKA
+            <h1 className="text-xl font-black font-serif tracking-tight text-white leading-none">
+              ROYAL MAJESTIC
             </h1>
             <p className="text-[9px] sm:text-[10px] text-amber-500 font-medium tracking-widest uppercase hidden sm:block">
               Premium Hotel & Restaurant

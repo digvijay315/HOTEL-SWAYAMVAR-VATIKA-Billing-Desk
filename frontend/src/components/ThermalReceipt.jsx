@@ -49,13 +49,13 @@ export default function ThermalReceipt({ invoice, onClose, isKot = false }) {
         {/* Header */}
         <div className="text-center mb-4 border-b border-black pb-2 border-dashed">
           <h1 className="font-bold text-xl uppercase tracking-wider mb-1">
-            {isKot ? "KITCHEN KOT" : "SWAYAMWAR VATIKA"}
+            {isKot ? "KITCHEN KOT" : "ROYAL MAJESTIC"}
           </h1>
           {!isKot && (
             <>
               <p className="text-xs">Premium Hotel & Restaurant</p>
-              <p className="text-xs">Main Road, City Center</p>
-              <p className="text-xs">Ph: +91 99999 99999</p>
+              <p className="text-xs mt-1">SRIRAM PARA ROAD, NAPIT PARA,</p>
+              <p className="text-xs mb-1">Dumka, Jharkhand 814101</p>
             </>
           )}
         </div>

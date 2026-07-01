@@ -38,12 +38,10 @@ export default function Login({ onLoginSuccess }) {
         <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-amber-500/10 rounded-full blur-3xl"></div>
 
         {/* Branding Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex bg-gradient-to-tr from-amber-600 to-yellow-400 p-3.5 rounded-2xl text-slate-950 mb-4 shadow-lg shadow-amber-500/20 animate-pulse">
-            <Coffee className="w-8 h-8 stroke-[2.5]" />
-          </div>
-          <h2 className="text-3xl font-black font-serif tracking-tight text-white">
-            HOTEL SWAYAMVAR VATIKA
+        <div className="text-center mb-8 flex flex-col items-center">
+          <img src="/logo.jpg" alt="Logo" className="w-24 h-auto mb-4 object-contain rounded-xl" />
+          <h2 className="text-3xl font-black font-serif tracking-tight text-white mt-2">
+            ROYAL MAJESTIC
           </h2>
           <p className="text-xs text-amber-500 uppercase tracking-widest font-bold mt-1">
             Billing Desk

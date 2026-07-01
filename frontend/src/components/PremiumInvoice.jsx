@@ -73,14 +73,17 @@ export default function PremiumInvoice({ invoice, onClose }) {
             {/* Invoice Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start gap-4 border-b pb-6 border-slate-100">
               <div>
-                <h2 className="text-2xl font-black font-serif tracking-tight text-amber-800">
-                  HOTEL SWAYAMVAR VATIKA
-                </h2>
+                <div className="flex items-center gap-3 mb-2">
+                  <img src="/logo.jpg" alt="Logo" className="w-12 h-12 object-contain rounded-md" />
+                  <h2 className="text-2xl font-black font-serif tracking-tight text-amber-800">
+                    ROYAL MAJESTIC
+                  </h2>
+                </div>
                 <h3 className="text-md font-semibold text-slate-700 italic">
                   Premium Hotel & Restaurant
                 </h3>
                 <p className="text-[10px] text-slate-500 mt-1 max-w-xs leading-tight">
-                  near Q complax building, near Daya vatika,<br />Basukinath, Jharkhand 814118
+                  SRIRAM PARA ROAD, NAPIT PARA,<br />Dumka, Jharkhand 814101
                 </p>
                 <p className="text-xs text-slate-500">
                   Owner: Rahul Chandan | Hotel & Restaurant
@@ -178,7 +181,7 @@ export default function PremiumInvoice({ invoice, onClose }) {
             {/* Invoice Footer terms */}
             <div className="border-t border-slate-100 pt-6 mt-8 text-center text-xs text-slate-400">
               <p className="font-medium">Thank you for dining with us!</p>
-              <p className="mt-1">Visit again to Hotel Swayamvar Vatika</p>
+              <p className="mt-1">Visit again to ROYAL MAJESTIC</p>
               <div className="flex justify-between items-end mt-8">
                 <div className="text-left">
                   <p className="text-[10px] text-slate-350 uppercase">Customer Signature</p>
@@ -229,10 +232,10 @@ export default function PremiumInvoice({ invoice, onClose }) {
         <div className="bg-white text-black p-2 mx-auto" style={{ width: '100%', maxWidth: '300px' }}>
           <div className="text-center border-b border-dashed border-gray-400 pb-2 mb-2">
             <h2 className="text-lg font-bold text-black uppercase leading-tight">
-              HOTEL SWAYAMVAR VATIKA
+              ROYAL MAJESTIC
             </h2>
             <p className="text-[10px] font-bold mt-0.5">Premium Hotel & Restaurant</p>
-            <p className="text-[9px] mt-0.5 leading-tight">near Q complax building, near Daya vatika,<br/>Basukinath, Jharkhand 814118</p>
+            <p className="text-[9px] mt-0.5 leading-tight">SRIRAM PARA ROAD, NAPIT PARA,<br/>Dumka, Jharkhand 814101</p>
             <p className="text-[10px] mt-1 font-bold">TAX INVOICE</p>
           </div>
           
