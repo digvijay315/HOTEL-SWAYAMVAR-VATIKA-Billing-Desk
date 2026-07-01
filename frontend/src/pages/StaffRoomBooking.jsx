@@ -28,10 +28,10 @@ export default function StaffRoomBooking() {
   const [companyAddress, setCompanyAddress] = useState("");
   const [verifyingGST, setVerifyingGST] = useState(false);
 
-  // Check out state
   const [activeBooking, setActiveBooking] = useState(null);
   const [showInvoice, setShowInvoice] = useState(false);
   const [manualTotalAmount, setManualTotalAmount] = useState(0);
+  const [splitBill, setSplitBill] = useState(false);
 
   useEffect(() => {
     fetchRooms();
@@ -85,6 +85,7 @@ export default function StaffRoomBooking() {
           }
           
           setManualTotalAmount(roomTotal + restaurantTotal);
+          setSplitBill(false);
 
           setShowCheckOutModal(true);
         } else {
@@ -139,7 +140,7 @@ export default function StaffRoomBooking() {
     setUploadingDoc(`photo-${index}`);
     setActiveWebcam(null);
     
-    const file = dataURLtoFile(imageSrc, `guest-${index}-photo.jpg`);
+    const file = dataURLtoFile(imageSrc, `guest-${index}-${Date.now()}-photo.jpg`);
     const formData = new FormData();
     formData.append("files", file);
 
@@ -278,7 +279,7 @@ export default function StaffRoomBooking() {
 
   return (
     <div className="p-4 md:p-6">
-      <div className="mb-8">
+      <div className="mb-8 no-print">
         <h2 className="text-2xl font-bold text-amber-500 flex items-center gap-2">
           <BedDouble className="w-7 h-7" />
           Room Booking System
@@ -287,9 +288,9 @@ export default function StaffRoomBooking() {
       </div>
 
       {loading ? (
-        <div className="text-amber-500 text-center py-10">Loading rooms...</div>
+        <div className="text-amber-500 text-center py-10 no-print">Loading rooms...</div>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-8 no-print">
           {['AC', 'Non-AC', 'Hall', 'Mini Hall'].map((type) => (
             groupedRooms[type] && groupedRooms[type].length > 0 && (
               <div key={type}>
@@ -552,6 +553,20 @@ export default function StaffRoomBooking() {
               <p className="text-xs text-slate-500 mt-1">You can manually adjust the final price before billing.</p>
             </div>
             
+            {activeBooking.restaurantBills && activeBooking.restaurantBills.length > 0 && (
+              <div className="mb-6 text-left bg-slate-950 p-3 rounded-xl border border-slate-700">
+                <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer font-semibold">
+                  <input
+                    type="checkbox"
+                    checked={splitBill}
+                    onChange={(e) => setSplitBill(e.target.checked)}
+                    className="w-4 h-4 accent-amber-500 rounded border-slate-700 bg-slate-900"
+                  />
+                  Split Room & Restaurant Bills (Print Separately)
+                </label>
+              </div>
+            )}
+            
             <div className="flex justify-between items-center bg-slate-900 border border-slate-700 rounded-xl p-3 mb-6">
               <span className="text-sm text-slate-300">Rest Amount to Collect:</span>
               <span className="text-xl font-bold text-emerald-400">₹{Math.max(0, manualTotalAmount - (activeBooking.advanceAmount || 0))}</span>
@@ -613,9 +628,11 @@ export default function StaffRoomBooking() {
       {showInvoice && (
         <PremiumRoomInvoice 
           booking={activeBooking} 
+          isSplit={splitBill}
           onClose={() => {
             setShowInvoice(false);
             setActiveBooking(null);
+            setSplitBill(false);
           }} 
         />
       )}

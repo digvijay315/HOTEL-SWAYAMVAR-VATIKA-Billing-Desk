@@ -69,16 +69,16 @@ export default function AdminRoomReports() {
     }
   };
 
-  const handleViewDocument = (url) => {
+  const handleViewImage = (url, title = 'Customer Document') => {
     if (!url) {
-      showAlert("Info", "No document uploaded for this booking.", "info");
+      showAlert("Info", `No ${title.toLowerCase()} uploaded for this booking.`, "info");
       return;
     }
     Swal.fire({
       ...getSwalConfig(),
-      title: 'Customer Document',
+      title: title,
       imageUrl: url,
-      imageAlt: 'Document',
+      imageAlt: title,
       width: 600,
       padding: '1em'
     });
@@ -248,9 +248,9 @@ export default function AdminRoomReports() {
                         <button
                           onClick={() => {
                             if (booking.guests && booking.guests[0]?.documentImage) {
-                              handleViewDocument(booking.guests[0].documentImage);
+                              handleViewImage(booking.guests[0].documentImage, 'Customer Document');
                             } else {
-                              handleViewDocument(null);
+                              handleViewImage(null, 'Customer Document');
                             }
                           }}
                           className="p-1.5 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all border border-transparent hover:border-blue-500/25"
@@ -302,48 +302,112 @@ export default function AdminRoomReports() {
         </div>
       )}
 
-      {/* Guest Details Modal */}
+      {/* Premium Guest Details Modal */}
       {showGuestModal && selectedGuestBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-700 p-6 rounded-2xl w-full max-w-2xl shadow-2xl max-h-[80vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6 border-b border-slate-800 pb-4">
-              <h3 className="text-xl font-bold text-amber-500">
-                Booking Details - Room {selectedGuestBooking.room?.roomNumber}
-              </h3>
-              <button onClick={() => setShowGuestModal(false)} className="text-slate-400 hover:text-white">✕</button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 dark:bg-slate-950/80 backdrop-blur-md animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-gold-800/40 p-0 rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden relative">
+            
+            {/* Header */}
+            <div className="bg-gradient-to-r from-slate-50 via-white to-slate-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-6 border-b border-slate-200 dark:border-gold-800/30 relative">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-400 dark:from-amber-500 dark:via-yellow-300 dark:to-amber-500"></div>
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-2xl font-black text-amber-600 dark:text-amber-500 flex items-center gap-3">
+                    <BookOpen className="w-6 h-6 text-amber-500 dark:text-amber-400" />
+                    Booking Details
+                  </h3>
+                  <p className="text-slate-600 dark:text-slate-400 text-sm mt-1 font-medium">
+                    Room <span className="text-slate-900 dark:text-white font-bold">{selectedGuestBooking.room?.roomNumber}</span> ({selectedGuestBooking.room?.type})
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setShowGuestModal(false)} 
+                  className="bg-slate-100 hover:bg-red-100 dark:bg-slate-800/50 dark:hover:bg-red-500/20 text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 p-2 rounded-full transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
             
-            <div className="grid grid-cols-2 gap-4 mb-6 bg-slate-800/50 p-4 rounded-xl">
-              <div>
-                <p className="text-sm text-slate-400">Check-In</p>
-                <p className="font-semibold text-white">{new Date(selectedGuestBooking.checkInTime).toLocaleString("en-IN")}</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-400">Status</p>
-                <p className={`font-semibold ${selectedGuestBooking.status === 'Checked-In' ? 'text-blue-400' : 'text-slate-400'}`}>{selectedGuestBooking.status}</p>
-              </div>
-            </div>
-
-            <h4 className="text-lg font-bold text-slate-300 mb-4 border-b border-slate-800 pb-2">Guest Information</h4>
-            <div className="space-y-4">
-              {selectedGuestBooking.guests && selectedGuestBooking.guests.map((g, idx) => (
-                <div key={idx} className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex justify-between items-center">
-                  <div>
-                    <p className="font-bold text-amber-500 text-lg">{g.name} <span className="text-sm text-slate-400 font-normal">(Age: {g.age})</span></p>
-                    <p className="text-slate-300">📞 {g.phone}</p>
-                    <p className="text-slate-400 text-sm mt-1">{g.idType}: {g.idNumber}</p>
-                  </div>
-                  {g.documentImage && (
-                    <button 
-                      onClick={() => handleViewDocument(g.documentImage)}
-                      className="px-3 py-1.5 text-blue-400 hover:bg-blue-500/10 hover:text-blue-300 rounded-lg text-sm font-semibold transition-all border border-transparent hover:border-blue-500/25 flex items-center gap-1"
-                    >
-                      View ID
-                    </button>
-                  )}
+            <div className="p-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+              
+              {/* Check-in / Out Info Card */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <div className="bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800/80 p-4 rounded-2xl shadow-sm dark:shadow-inner">
+                  <p className="text-xs text-slate-500 dark:text-slate-500 uppercase tracking-widest font-bold mb-1">Check-In</p>
+                  <p className="font-medium text-emerald-600 dark:text-emerald-400 font-mono text-sm">{new Date(selectedGuestBooking.checkInTime).toLocaleString("en-IN")}</p>
                 </div>
-              ))}
+                <div className="bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800/80 p-4 rounded-2xl shadow-sm dark:shadow-inner">
+                  <p className="text-xs text-slate-500 dark:text-slate-500 uppercase tracking-widest font-bold mb-1">Check-Out</p>
+                  <p className="font-medium text-amber-600 dark:text-amber-500 font-mono text-sm">
+                    {selectedGuestBooking.checkOutTime 
+                      ? new Date(selectedGuestBooking.checkOutTime).toLocaleString("en-IN")
+                      : "Not Checked-Out Yet"}
+                  </p>
+                </div>
+                <div className="bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800/80 p-4 rounded-2xl shadow-sm dark:shadow-inner flex flex-col justify-center">
+                  <p className="text-xs text-slate-500 dark:text-slate-500 uppercase tracking-widest font-bold mb-1">Status</p>
+                  <div>
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                      selectedGuestBooking.status === 'Checked-In' 
+                        ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/30' 
+                        : 'bg-slate-200 dark:bg-slate-500/20 text-slate-700 dark:text-slate-400 border border-slate-300 dark:border-slate-500/30'
+                    }`}>
+                      {selectedGuestBooking.status}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 mb-4">
+                <div className="h-px bg-slate-200 dark:bg-slate-800 flex-1"></div>
+                <h4 className="text-lg font-black text-slate-800 dark:text-slate-300 uppercase tracking-widest">Guest Information</h4>
+                <div className="h-px bg-slate-200 dark:bg-slate-800 flex-1"></div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {selectedGuestBooking.guests && selectedGuestBooking.guests.map((g, idx) => (
+                  <div key={idx} className="bg-gradient-to-b from-white to-slate-50 dark:from-slate-800/40 dark:to-slate-900/40 p-5 rounded-2xl border border-slate-200 dark:border-gold-800/20 relative group hover:border-amber-500/50 dark:hover:border-gold-800/50 transition-colors shadow-md dark:shadow-lg">
+                    <div className="absolute top-0 right-0 bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-500 px-3 py-1 rounded-bl-2xl rounded-tr-2xl text-xs font-bold border-b border-l border-amber-200 dark:border-gold-800/20">
+                      Guest {idx + 1}
+                    </div>
+                    
+                    <div className="mb-4 pr-16">
+                      <p className="font-black text-slate-900 dark:text-white text-lg tracking-wide">{g.name}</p>
+                      <div className="flex items-center gap-4 mt-1">
+                        <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">Age: <span className="text-amber-600 dark:text-amber-400">{g.age}</span></p>
+                        <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">Ph: <span className="text-amber-600 dark:text-amber-400">{g.phone}</span></p>
+                      </div>
+                      <p className="text-slate-500 dark:text-slate-500 text-xs mt-2 uppercase tracking-wider font-bold">
+                        {g.idType}: <span className="text-slate-800 dark:text-slate-300">{g.idNumber}</span>
+                      </p>
+                    </div>
+                    
+                    <div className="flex gap-2 mt-4 pt-4 border-t border-slate-200 dark:border-slate-800/80">
+                      {g.personPhoto && (
+                        <button 
+                          onClick={() => handleViewImage(g.personPhoto, 'Live Photo')}
+                          className="flex-1 bg-amber-100 hover:bg-amber-200 dark:bg-amber-500/10 dark:hover:bg-amber-500/20 text-amber-700 dark:text-amber-500 py-2 rounded-xl text-xs font-bold transition-all border border-amber-200 hover:border-amber-400 dark:border-amber-500/20 dark:hover:border-amber-500/50 flex items-center justify-center gap-1.5 shadow-sm dark:shadow-inner"
+                        >
+                          <ImageIcon className="w-3.5 h-3.5" />
+                          Live Photo
+                        </button>
+                      )}
+                      {g.documentImage && (
+                        <button 
+                          onClick={() => handleViewImage(g.documentImage, 'ID Document')}
+                          className="flex-1 bg-blue-100 hover:bg-blue-200 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 text-blue-700 dark:text-blue-400 py-2 rounded-xl text-xs font-bold transition-all border border-blue-200 hover:border-blue-400 dark:border-blue-500/20 dark:hover:border-blue-500/50 flex items-center justify-center gap-1.5 shadow-sm dark:shadow-inner"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          View ID
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
+            
           </div>
         </div>
       )}
