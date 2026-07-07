@@ -495,12 +495,22 @@ export default function StaffRoomBooking() {
                             {verifyingGST ? "..." : "Verify"}
                           </button>
                         </div>
-                        {companyName && (
-                          <div className="text-xs text-slate-400 bg-slate-950/50 p-2 rounded-lg border border-slate-700/50">
-                            <p className="font-bold text-amber-500">{companyName}</p>
-                            <p className="truncate">{companyAddress}</p>
-                          </div>
-                        )}
+                        <div className="flex flex-col gap-2 mt-1">
+                          <input
+                            type="text"
+                            placeholder="Company Name"
+                            value={companyName}
+                            onChange={(e) => setCompanyName(e.target.value)}
+                            className="w-full bg-slate-950/50 border border-slate-700/50 rounded-xl px-3 py-2 text-sm text-white focus:border-amber-500/50 outline-none"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Company Address"
+                            value={companyAddress}
+                            onChange={(e) => setCompanyAddress(e.target.value)}
+                            className="w-full bg-slate-950/50 border border-slate-700/50 rounded-xl px-3 py-2 text-sm text-white focus:border-amber-500/50 outline-none"
+                          />
+                        </div>
                       </div>
                     ) : (
                       <div className="h-[46px]"></div>

@@ -17,6 +17,7 @@ export default function StaffKotBilling() {
 
   // Order Data
   const [cart, setCart] = useState([]);
+  const [initialCart, setInitialCart] = useState([]);
   const [activeOrderId, setActiveOrderId] = useState(null);
   
   // View states
@@ -67,6 +68,7 @@ export default function StaffKotBilling() {
   const handleTableClick = async (table) => {
     setSelectedTable(table);
     setCart([]);
+    setInitialCart([]);
     setActiveOrderId(null);
     setView("order");
 
@@ -77,6 +79,7 @@ export default function StaffKotBilling() {
           const orderData = res.data.data;
           setActiveOrderId(orderData._id);
           setCart(orderData.items);
+          setInitialCart(JSON.parse(JSON.stringify(orderData.items)));
         }
       } catch (error) {
         console.error("Error fetching active order", error);
@@ -124,6 +127,21 @@ export default function StaffKotBilling() {
       showError("Empty Order", "Please add items to the KOT.");
       return;
     }
+
+    // Compute newly added items for the kitchen print
+    const newKotItems = [];
+    cart.forEach(currentItem => {
+      const oldItem = initialCart.find(i => i.dishId === currentItem.dishId);
+      const oldQty = oldItem ? oldItem.quantity : 0;
+      const diffQty = currentItem.quantity - oldQty;
+      if (diffQty > 0) {
+        newKotItems.push({
+          ...currentItem,
+          quantity: diffQty
+        });
+      }
+    });
+
     setLoading(true);
     try {
       await orderAPI.createOrUpdateOrder({
@@ -133,14 +151,18 @@ export default function StaffKotBilling() {
         tax,
         grandTotal
       });
-      // Removed showSuccess because SweetAlert's body overlay causes window.print() to capture a blank page.
-      setIsKotPrint(true);
-      setGeneratedInvoice({
-        tableNo: "Table " + selectedTable.tableNo,
-        items: [...cart],
-        createdAt: new Date().toISOString()
-      });
-      // It will stay in order view until print dialog closes, then goBackToTables() is called
+      
+      if (newKotItems.length > 0) {
+        setIsKotPrint(true);
+        setGeneratedInvoice({
+          tableNo: "Table " + selectedTable.tableNo,
+          items: newKotItems,
+          createdAt: new Date().toISOString()
+        });
+      } else {
+        showSuccess("Saved", "Order updated! No new items to print for KOT.");
+        goBackToTables();
+      }
     } catch (error) {
       showError("Save Failed", error.response?.data?.message || "Something went wrong.");
     } finally {

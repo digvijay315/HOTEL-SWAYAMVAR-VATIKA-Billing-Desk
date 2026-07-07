@@ -189,6 +189,11 @@ exports.verifyGST = async (req, res) => {
         const response = await axios.get(`https://appyflow.in/api/verifyGST?gstNo=${gstNumber}&key_secret=${process.env.GST_API_KEY}`);
         
         if (response.data && !response.data.error) {
+          // If the free limit is reached, AppyFlow returns error: false with this sandbox response
+          if (response.data.message && response.data.message.includes('paid credits')) {
+            return res.status(400).json({ success: false, message: 'GST API limit reached. Please enter details manually.' });
+          }
+
           const info = response.data.taxpayerInfo || {};
           const addrObj = info.pradr?.addr || {};
           const addressString = `${addrObj.bno || ''} ${addrObj.st || ''} ${addrObj.loc || ''}, ${addrObj.dst || ''}, ${addrObj.stcd || ''} - ${addrObj.pncd || ''}`.replace(/\s+/g, ' ').trim() || "Address verified";
@@ -315,6 +320,7 @@ exports.exportBookingsToExcel = async (req, res) => {
       { header: 'Phone', key: 'phone', width: 15 },
       { header: 'ID Type', key: 'idType', width: 15 },
       { header: 'ID Number', key: 'idNumber', width: 20 },
+      { header: 'Total Persons', key: 'totalPersons', width: 15 },
       { header: 'Room No', key: 'roomNo', width: 15 },
       { header: 'Room Type', key: 'roomType', width: 15 },
       { header: 'Check In', key: 'checkIn', width: 20 },
@@ -329,6 +335,7 @@ exports.exportBookingsToExcel = async (req, res) => {
         phone: b.guests && b.guests.length > 0 ? b.guests[0].phone : 'N/A',
         idType: b.guests && b.guests.length > 0 ? b.guests[0].idType : 'N/A',
         idNumber: b.guests && b.guests.length > 0 ? b.guests[0].idNumber : 'N/A',
+        totalPersons: b.guests ? b.guests.length : 0,
         roomNo: b.room ? b.room.roomNumber : 'N/A',
         roomType: b.room ? b.room.type : 'N/A',
         checkIn: b.checkInTime ? new Date(b.checkInTime).toLocaleString("en-IN") : 'N/A',
