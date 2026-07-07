@@ -355,7 +355,7 @@ export default function StaffRoomBooking() {
                         <label className="block text-xs text-slate-400 mb-1">Name</label>
                         <input
                           type="text"
-                          required
+                          required={index === 0}
                           value={guest.name}
                           onChange={(e) => updateGuestField(index, "name", e.target.value)}
                           className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"
@@ -368,7 +368,6 @@ export default function StaffRoomBooking() {
                           <label className="block text-xs text-slate-400 mb-1">Age</label>
                           <input
                             type="number"
-                            required
                             value={guest.age}
                             onChange={(e) => updateGuestField(index, "age", e.target.value)}
                             className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"

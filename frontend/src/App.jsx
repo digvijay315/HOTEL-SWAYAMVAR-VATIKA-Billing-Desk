@@ -15,6 +15,7 @@ import AdminRoomReports from "./pages/AdminRoomReports";
 import AdminTables from "./pages/AdminTables";
 import StaffRoomBooking from "./pages/StaffRoomBooking";
 import StaffKotBilling from "./pages/StaffKotBilling";
+import StaffGRC from "./pages/StaffGRC";
 
 // Guard for Admin Routes
 const AdminRoute = ({ children, currentUser, handleLogout, theme, toggleTheme }) => {
@@ -184,6 +185,16 @@ export default function App() {
           element={
             <StaffRoute currentUser={currentUser} handleLogout={handleLogout} theme={theme} toggleTheme={toggleTheme}>
               <StaffRoomBooking />
+            </StaffRoute>
+          }
+        />
+
+        {/* Staff GRC Route */}
+        <Route
+          path="/staff/grc"
+          element={
+            <StaffRoute currentUser={currentUser} handleLogout={handleLogout} theme={theme} toggleTheme={toggleTheme}>
+              <StaffGRC />
             </StaffRoute>
           }
         />

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { LogOut, User, Coffee, Sun, Moon, Menu, X, Utensils, BedDouble } from "lucide-react";
+import { LogOut, User, Coffee, Sun, Moon, Menu, X, Utensils, BedDouble, FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function Navbar({ currentUser, onLogout, theme, toggleTheme, toggleSidebar }) {
@@ -78,6 +78,16 @@ export default function Navbar({ currentUser, onLogout, theme, toggleTheme, togg
                 }`}
               >
                 KOT Billing
+              </button>
+              <button
+                onClick={() => navigate("/staff/grc")}
+                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  window.location.pathname === "/staff/grc"
+                    ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                    : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                Print GRC
               </button>
             </div>
           )}
@@ -161,6 +171,17 @@ export default function Navbar({ currentUser, onLogout, theme, toggleTheme, togg
               >
                 <Utensils className="w-5 h-5" />
                 KOT Billing
+              </button>
+              <button
+                onClick={() => { navigate("/staff/grc"); setIsStaffMenuOpen(false); }}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-left ${
+                  window.location.pathname === "/staff/grc"
+                    ? "bg-amber-500/20 text-amber-400 border border-amber-500/30 font-semibold"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+                }`}
+              >
+                <FileText className="w-5 h-5" />
+                Print GRC
               </button>
             </div>
           )}

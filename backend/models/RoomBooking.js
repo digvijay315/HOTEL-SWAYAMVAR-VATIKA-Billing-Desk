@@ -7,11 +7,11 @@ const roomBookingSchema = new mongoose.Schema({
     required: true
   },
   guests: [{
-    name: { type: String, required: true },
-    age: { type: Number, required: true },
-    phone: { type: String, required: true },
+    name: { type: String },
+    age: { type: Number },
+    phone: { type: String },
     idType: { type: String, enum: ['Aadhar', 'PAN', 'Other'], default: 'Aadhar' },
-    idNumber: { type: String, required: true },
+    idNumber: { type: String },
     documentImage: { type: String, default: null },
     personPhoto: { type: String, default: null }
   }],

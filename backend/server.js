@@ -32,6 +32,7 @@ app.use("/api/rooms", require("./routes/roomRoutes"));
 app.use("/api/room-bookings", require("./routes/roomBookingRoutes"));
 app.use("/api/tables", require("./routes/tableRoutes"));
 app.use("/api/orders", require("./routes/orderRoutes"));
+app.use("/api/grc", require("./routes/grcRoutes"));
 
 // Error handling middleware
 app.use((err, req, res, next) => {

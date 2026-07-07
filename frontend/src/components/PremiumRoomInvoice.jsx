@@ -1,6 +1,21 @@
 import React, { useState } from "react";
-import { Printer, Download, X, CheckCircle } from "lucide-react";
-import Swal from "sweetalert2";
+import { Printer, X, CheckCircle } from "lucide-react";
+
+// Helper to convert number to words
+function numberToWords(num) {
+  const a = ['','One ','Two ','Three ','Four ', 'Five ','Six ','Seven ','Eight ','Nine ','Ten ','Eleven ','Twelve ','Thirteen ','Fourteen ','Fifteen ','Sixteen ','Seventeen ','Eighteen ','Nineteen '];
+  const b = ['', '', 'Twenty','Thirty','Forty','Fifty', 'Sixty','Seventy','Eighty','Ninety'];
+
+  if ((num = num.toString()).length > 9) return 'overflow';
+  let n = ('000000000' + num).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+  if (!n) return; let str = '';
+  str += (n[1] != 0) ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'Crore ' : '';
+  str += (n[2] != 0) ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'Lakh ' : '';
+  str += (n[3] != 0) ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'Thousand ' : '';
+  str += (n[4] != 0) ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'Hundred ' : '';
+  str += (n[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) + 'Only' : 'Only';
+  return str.trim();
+}
 
 export default function PremiumRoomInvoice({ booking, onClose, isSplit = false }) {
   if (!booking) return null;
@@ -17,382 +32,291 @@ export default function PremiumRoomInvoice({ booking, onClose, isSplit = false }
   let diffDays = Math.ceil(adjustedDiffTime / (1000 * 60 * 60 * 24));
   if (diffDays === 0) diffDays = 1;
 
-  let restaurantTotal = 0;
-  if (booking.restaurantBills && booking.restaurantBills.length > 0) {
-    restaurantTotal = booking.restaurantBills.reduce((acc, bill) => {
-      const itemsSum = bill.items ? bill.items.reduce((s, i) => s + (i.price * i.quantity), 0) : 0;
-      return acc + itemsSum + (bill.tax || 0);
-    }, 0);
+  const guestName = booking.guests && booking.guests[0] ? booking.guests[0].name.toUpperCase() : 'N/A';
+  const pax = booking.guests ? booking.guests.length : 1;
+  const roomType = booking.room?.type || 'N/A';
+  const roomNo = booking.room?.roomNumber || 'N/A';
+  const roomTariff = booking.room?.price || 0;
+  const billNo = booking.invoiceNumber || booking._id.substring(booking._id.length - 6).toUpperCase();
+  const grcNo = booking._id.substring(booking._id.length - 4).toUpperCase();
+  
+  const address = booking.hasGST ? booking.companyAddress : 'N/A';
+  const company = booking.hasGST ? booking.companyName : '';
+  const gstIn = booking.hasGST ? booking.gstNumber : '';
+
+  const InvoiceContent = ({ isRestaurantOnly = false, isCombined = false }) => {
+    const rows = [];
+    let subTotal = 0;
+    let cgst = 0;
+    let sgst = 0;
+
+    if (!isRestaurantOnly) {
+      for (let i = 0; i < diffDays; i++) {
+        const d = new Date(checkInDate);
+        d.setDate(d.getDate() + i);
+        rows.push({
+          date: d.toLocaleDateString("en-GB", {day:'2-digit', month:'short', year:'numeric'}),
+          vch: `RC/${billNo}`,
+          desc: `Room Charge, Room No: ${roomNo}`,
+          amt: roomTariff
+        });
+        subTotal += roomTariff;
+      }
+      cgst += subTotal * 0.025;
+      sgst += subTotal * 0.025;
+    }
+
+    if (isCombined || isRestaurantOnly) {
+      if (booking.restaurantBills) {
+        booking.restaurantBills.forEach((bill) => {
+          const bDate = new Date(bill.createdAt || checkOutDate);
+          const bNo = bill.invoiceNumber || bill._id.substring(bill._id.length - 6).toUpperCase();
+          if (bill.items) {
+            bill.items.forEach((item) => {
+              rows.push({
+                date: bDate.toLocaleDateString("en-GB", {day:'2-digit', month:'short', year:'numeric'}),
+                vch: `RB/${bNo}`,
+                desc: `Restaurant: ${item.name} (Qty: ${item.quantity})`,
+                amt: item.price * item.quantity
+              });
+              subTotal += item.price * item.quantity;
+            });
+          }
+          if (bill.tax) {
+            cgst += bill.tax / 2;
+            sgst += bill.tax / 2;
+          }
+        });
+      }
+    }
+
+    const grandTotal = subTotal + cgst + sgst;
+    const amountInWords = numberToWords(Math.round(grandTotal));
+    
+    // Add empty rows to fill space if needed
+    const fillRows = Array.from({ length: Math.max(0, 10 - rows.length) }).map((_, i) => ({
+      date: "\u00A0", vch: "\u00A0", desc: "\u00A0", amt: null
+    }));
+    const allRows = [...rows, ...fillRows];
+
+    return (
+      <div className="bg-white text-black p-4 w-full text-sm font-sans relative" style={{ width: '800px', margin: '0 auto', pageBreakAfter: 'always' }}>
+        {/* Header */}
+        <div className="flex items-start justify-between mb-2">
+          <div className="w-1/4 pt-2">
+            <img src="/logo.png" alt="ROYAL MAJESTIC LOGO" className="w-24 h-24 object-contain" />
+          </div>
+          <div className="w-2/4 text-center">
+            <h1 className="text-3xl font-bold tracking-wide uppercase" style={{ color: '#000' }}>ROYAL MAJESTIC</h1>
+            <p className="text-[11px] font-semibold mt-1">Near Town Police Station, Dumka Jharkhand-814101</p>
+            <p className="text-[11px] mt-1 font-semibold">PHONE:- +91 9905900360, MOB:- 9905900361</p>
+            <p className="text-[11px] font-semibold">E-MAIL:-royalmajesticrana@gmail.com</p>
+            <h2 className="text-sm font-bold mt-2 underline">Tax Invoice {isRestaurantOnly ? "(Restaurant)" : ""}</h2>
+          </div>
+          <div className="w-1/4 text-right pt-6 text-[10px] font-bold">
+            <p>GST IN:-20AAAXFR0731N1ZX</p>
+            <p>SAC/HSN CODE:-996311</p>
+          </div>
+        </div>
+
+        {/* Tables Box */}
+        <div className="border border-black flex flex-col mt-4 w-full">
+          <div className="flex border-b border-black font-semibold text-xs bg-gray-100">
+            <div className="w-[30%] border-r border-black p-1">G.R.C. No.: {grcNo}</div>
+            <div className="w-[20%] border-r border-black p-1">Bill No.</div>
+            <div className="w-[25%] border-r border-black p-1 text-center">{billNo}</div>
+            <div className="w-[25%] p-1 flex justify-between"><span>Room No. :</span><span>{roomNo}</span></div>
+          </div>
+          <div className="flex border-b border-black font-semibold text-xs text-center bg-gray-100">
+            <div className="w-[35%] border-r border-black p-1 text-left pl-2">GUEST NAME</div>
+            <div className="w-[15%] border-r border-black p-1">Room.Tariff.</div>
+            <div className="w-[15%] border-r border-black p-1">Pax</div>
+            <div className="w-[20%] border-r border-black p-1">Room Type</div>
+            <div className="w-[15%] p-1">Nationality</div>
+          </div>
+          <div className="flex border-b border-black text-xs text-center">
+            <div className="w-[35%] border-r border-black p-1 text-left pl-2 uppercase">{guestName}</div>
+            <div className="w-[15%] border-r border-black p-1">{roomTariff}</div>
+            <div className="w-[15%] border-r border-black p-1">{pax}/0</div>
+            <div className="w-[20%] border-r border-black p-1">{roomType}</div>
+            <div className="w-[15%] p-1 uppercase">INDIAN</div>
+          </div>
+          <div className="flex border-b border-black font-semibold text-xs text-center bg-gray-100">
+            <div className="w-[50%] border-r border-black p-1 text-center">ADDRESS</div>
+            <div className="w-[25%] border-r border-black p-1">Check In Date & Time</div>
+            <div className="w-[25%] p-1">Check Out Date & Time</div>
+          </div>
+          <div className="flex border-b border-black text-xs">
+            <div className="w-[50%] border-r border-black p-1 uppercase whitespace-pre-wrap">{address}</div>
+            <div className="w-[25%] border-r border-black p-1 text-center flex flex-col justify-center">
+              <span>{checkInDate.toLocaleDateString("en-GB")}</span>
+              <span>{checkInDate.toLocaleTimeString("en-GB", {hour: '2-digit', minute:'2-digit'})}</span>
+            </div>
+            <div className="w-[25%] p-1 text-center flex flex-col justify-center">
+              <span>{checkOutDate.toLocaleDateString("en-GB")}</span>
+              <span>{checkOutDate.toLocaleTimeString("en-GB", {hour: '2-digit', minute:'2-digit'})}</span>
+            </div>
+          </div>
+          <div className="flex border-b border-black text-xs bg-gray-100 font-semibold">
+            <div className="w-[12%] p-1">Company</div>
+            <div className="w-[48%] p-1 uppercase">: {company}</div>
+            <div className="w-[25%] p-1 uppercase">{gstIn}</div>
+            <div className="w-[15%] p-1 text-right">Plan: CP</div>
+          </div>
+        </div>
+
+        {/* Main Table Content */}
+        <div className="border border-black border-t-0 flex flex-col w-full" style={{ minHeight: '350px' }}>
+          <div className="flex border-b border-black font-semibold text-xs bg-gray-100 h-6">
+            <div className="w-[15%] border-r border-black p-1">Date</div>
+            <div className="w-[15%] border-r border-black p-1">Bill/Voucher</div>
+            <div className="w-[45%] border-r border-black p-1">Description</div>
+            <div className="w-[12.5%] border-r border-black p-1 text-center">Debit</div>
+            <div className="w-[12.5%] p-1 text-center">Credit</div>
+          </div>
+          
+          <div className="flex-1 flex text-xs relative pb-[120px]">
+            <div className="w-[15%] border-r border-black p-1">
+              {allRows.map((r, i) => <div key={`d-${i}`}>{r.date}</div>)}
+            </div>
+            <div className="w-[15%] border-r border-black p-1">
+              {allRows.map((r, i) => <div key={`v-${i}`}>{r.vch}</div>)}
+            </div>
+            <div className="w-[45%] border-r border-black p-1">
+              {allRows.map((r, i) => <div key={`desc-${i}`} className="truncate">{r.desc}</div>)}
+            </div>
+            <div className="w-[12.5%] border-r border-black p-1 text-right pr-2">
+              {allRows.map((r, i) => <div key={`deb-${i}`}>{r.amt !== null ? r.amt.toFixed(2) : "\u00A0"}</div>)}
+            </div>
+            <div className="w-[12.5%] p-1"></div>
+
+            <div className="flex border-t border-black text-xs absolute bottom-0 w-full bg-white h-[120px]">
+              <div className="w-[60%] border-r border-black flex flex-col">
+                <div className="font-semibold p-1">Remark :</div>
+                <div className="p-1 pb-4 italic font-semibold">: {amountInWords}</div>
+              </div>
+              <div className="w-[40%] flex">
+                <div className="w-[60%] border-r border-black flex flex-col">
+                  <div className="p-1 border-b border-black h-6">TOTAL</div>
+                  <div className="p-1 h-6">AMOUNT</div>
+                  <div className="p-1 h-6">CGST @2.5%</div>
+                  <div className="p-1 h-6">SGST @2.5%</div>
+                  <div className="p-1 border-t border-black font-semibold h-[24px]">BALANCE</div>
+                </div>
+                <div className="w-[40%] flex flex-col text-right">
+                  <div className="p-1 border-b border-black pr-2 h-6">{subTotal.toFixed(2)}</div>
+                  <div className="p-1 pr-2 h-6">{subTotal.toFixed(2)}</div>
+                  <div className="p-1 pr-2 h-6">{cgst.toFixed(2)}</div>
+                  <div className="p-1 pr-2 h-6">{sgst.toFixed(2)}</div>
+                  <div className="p-1 border-t border-black font-semibold pr-2 h-[24px]">{grandTotal.toFixed(2)}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer Area */}
+        <div className="border border-black border-t-0 p-2 text-[10px] w-full flex flex-col relative pb-8">
+          <p className="font-semibold">Mode of Payment:</p>
+          {/* <div className="absolute left-10 top-2 w-[70px] h-[70px] border border-black rounded-full flex flex-col items-center justify-center opacity-40 rotate-[-15deg] pointer-events-none">
+            <span className="text-[7px] font-bold text-center leading-tight mt-1">ROYAL<br/>MAJESTIC</span>
+            <span className="text-[7px] border-t border-b border-black w-[80%] text-center my-0.5">DUMKA<br/>814101</span>
+            <span className="text-[7px] mb-1">(Jh.)</span>
+          </div> */}
+
+          <div className="text-center mt-4 flex flex-col items-center z-10 w-full relative">
+            <p className="font-bold text-[11px] border-b border-black pb-0.5 inline-block mx-auto mb-1 tracking-wide">
+              PLEASE RETURN YOUR KEY ON DEPARTURE
+            </p>
+            <p className="uppercase mb-1" style={{ fontSize: '8.5px' }}>
+              I AGREE THAT I AM RESPONSIBLE FOR THE FULL PAYMENT OF THIS BILL IN THE EVENTS,IF IT IS NOT PAID (BY THE COMPANY/ORGANIGATION OR PERSON INDICATED)
+            </p>
+            <p className="font-bold text-[11px] uppercase mb-1 underline tracking-wide">
+              CHECK OUT TIME: 24Hrs
+            </p>
+            <p className="italic font-semibold mb-6">
+              (Subject to Dumka Juridiction)
+            </p>
+          </div>
+
+          <div className="flex justify-between items-end w-full px-4 text-xs font-semibold mt-4">
+            <div className="text-center">
+              <div className="w-32 border-b border-black mb-1"></div>
+              <p>Cashier's Signature</p>
+            </div>
+            <div className="text-center flex-1 italic text-[11px] px-4 font-normal">
+              -------------------Thank You for Honouring us by your visit-------------------
+            </div>
+            <div className="text-center">
+              <div className="w-32 border-b border-black mb-1"></div>
+              <p>Guest's Signature</p>
+            </div>
+          </div>
+          
+          <div className="absolute bottom-2 right-4 text-xs font-semibold">
+            Page: 1
+          </div>
+          <div className="absolute bottom-2 left-4 text-[9px] font-semibold">
+            E. & O. E.
+          </div>
+        </div>
+      </div>
+    );
   }
-  const roomTotalAmount = (booking.totalAmount || 0) - restaurantTotal;
+
   const hasRestaurant = booking.restaurantBills && booking.restaurantBills.length > 0;
 
-  const renderRoomItems = () => (
-    <tr className="text-slate-800">
-      <td className="py-3 font-medium">Room Stay: {booking.room?.type} ({booking.room?.roomNumber})</td>
-      <td className="py-3 text-center">{diffDays}</td>
-      <td className="py-3 text-right font-mono">₹{booking.room?.price?.toFixed(2)}</td>
-      <td className="py-3 text-right font-mono font-medium">
-        ₹{(booking.room?.price * diffDays).toFixed(2)}
-      </td>
-    </tr>
-  );
-
-  const renderRestaurantItems = () => (
-    <>
-      {booking.restaurantBills.map((bill, billIndex) => (
-        <React.Fragment key={bill._id}>
-          <tr className="bg-amber-100/50">
-            <td colSpan="4" className="py-2 px-2 text-xs font-bold text-amber-800 border-t border-amber-200">
-              Restaurant Order #{bill.invoiceNumber || bill._id.substring(bill._id.length - 6)}
-            </td>
-          </tr>
-          {bill.items && bill.items.map((item, itemIndex) => (
-            <tr key={`${bill._id}-${itemIndex}`} className="text-slate-700 bg-amber-50/30 text-sm">
-              <td className="py-2 pl-4 font-medium">- {item.name}</td>
-              <td className="py-2 text-center">{item.quantity}</td>
-              <td className="py-2 text-right font-mono">₹{item.price?.toFixed(2)}</td>
-              <td className="py-2 text-right font-mono font-medium">
-                ₹{(item.price * item.quantity).toFixed(2)}
-              </td>
-            </tr>
-          ))}
-          {bill.tax > 0 && (
-            <tr className="text-slate-600 bg-amber-50/30 text-xs">
-              <td colSpan="3" className="py-1 text-right italic">GST (5%)</td>
-              <td className="py-1 text-right font-mono">₹{bill.tax?.toFixed(2)}</td>
-            </tr>
-          )}
-        </React.Fragment>
-      ))}
-    </>
-  );
-
-  const renderPrintRoomItems = () => (
-    <tr>
-      <td className="py-2">Room Stay: {booking.room?.type} ({booking.room?.roomNumber})</td>
-      <td className="py-2 text-center">{diffDays}</td>
-      <td className="py-2 text-right">₹{booking.room?.price}</td>
-      <td className="py-2 text-right">₹{booking.room?.price * diffDays}</td>
-    </tr>
-  );
-
-  const renderPrintRestaurantItems = () => (
-    <>
-      {booking.restaurantBills.map((bill) => (
-        <React.Fragment key={bill._id}>
-          <tr className="bg-gray-100">
-            <td colSpan="4" className="py-1 px-1 font-bold italic text-gray-700 border-t border-gray-300">
-              Restaurant Order #{bill.invoiceNumber || bill._id.substring(bill._id.length - 6)}
-            </td>
-          </tr>
-          {bill.items && bill.items.map((item, i) => (
-            <tr key={`${bill._id}-${i}`}>
-              <td className="py-1 pl-3 text-gray-700">- {item.name}</td>
-              <td className="py-1 text-center text-gray-700">{item.quantity}</td>
-              <td className="py-1 text-right text-gray-700">₹{item.price}</td>
-              <td className="py-1 text-right text-gray-700">₹{item.price * item.quantity}</td>
-            </tr>
-          ))}
-          {bill.tax > 0 && (
-            <tr>
-              <td colSpan="3" className="py-1 text-right text-gray-500 italic">GST (5%)</td>
-              <td className="py-1 text-right text-gray-500">₹{bill.tax}</td>
-            </tr>
-          )}
-        </React.Fragment>
-      ))}
-    </>
-  );
-
-  const InvoicePreviewCard = ({ type }) => {
-    const isRoomOnly = type === 'Room';
-    const isRestaurantOnly = type === 'Restaurant';
-    const isCombined = type === 'Combined';
-
-    const title = isCombined ? "Room Bill" : (isRoomOnly ? "Room Bill" : "Restaurant Bill");
-    const total = isCombined ? booking.totalAmount : (isRoomOnly ? roomTotalAmount : restaurantTotal);
-
-    return (
-      <div className={`bg-white text-slate-900 p-8 rounded-xl border border-slate-200 shadow-sm font-sans printable-room-sheet ${!isCombined && !isRestaurantOnly ? 'mb-8' : ''}`}>
-        
-        <div className="flex flex-col sm:flex-row justify-between items-start gap-4 border-b pb-6 border-slate-100">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <img src="/logo.jpg" alt="Logo" className="w-12 h-12 object-contain rounded-md" />
-              <h2 className="text-2xl font-black font-serif tracking-tight text-indigo-800">
-                ROYAL MAJESTIC
-              </h2>
-            </div>
-            <h3 className="text-md font-semibold text-slate-700 italic">
-              Premium Hotel & Accommodation
-            </h3>
-            <p className="text-[10px] text-slate-500 mt-1 max-w-xs leading-tight">
-              SRIRAM PARA ROAD, NAPIT PARA,<br />Dumka, Jharkhand 814101
-            </p>
-            <p className="text-xs text-slate-500">
-              Owner: Rahul Chandan | Hotel & Restaurant
-            </p>
-          </div>
-          <div className="text-right sm:text-right">
-            <span className="bg-amber-100 text-amber-800 text-[10px] font-bold tracking-wider px-2.5 py-1 rounded-full uppercase">
-              {title}
-            </span>
-            <p className="text-sm font-bold text-slate-800 mt-2">
-              Booking ID: <span className="font-mono text-xs">{booking._id.substring(booking._id.length - 6)}</span>
-            </p>
-            <p className="text-xs text-slate-500">
-              Date: {new Date().toLocaleDateString("en-IN")}
-            </p>
-          </div>
-        </div>
-
-        <div className="my-6 bg-slate-50 p-4 rounded-lg border border-slate-100">
-          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
-            Guest Details
-          </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-            <div>
-              <p className="text-slate-500">Primary Guest:</p>
-              <p className="font-semibold text-slate-800">{booking.guests && booking.guests[0] ? booking.guests[0].name : 'N/A'}</p>
-            </div>
-            <div>
-              <p className="text-slate-500">Mobile:</p>
-              <p className="font-semibold text-slate-800">{booking.guests && booking.guests[0] ? booking.guests[0].phone : 'N/A'}</p>
-            </div>
-            {!isRestaurantOnly && (
-              <>
-                <div>
-                  <p className="text-slate-500">{booking.guests && booking.guests[0] ? booking.guests[0].idType : 'ID'} No:</p>
-                  <p className="font-semibold text-slate-850 font-mono text-xs">{booking.guests && booking.guests[0] ? booking.guests[0].idNumber : 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-slate-500">Total Persons:</p>
-                  <p className="font-semibold text-slate-850 font-mono text-xs">{booking.guests ? booking.guests.length : 1}</p>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Hide Stay Details for Restaurant Only Bill */}
-        {!isRestaurantOnly && (
-          <div className="my-6">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 border-b pb-1">
-              Stay Details
-            </h4>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm mt-3">
-              <div>
-                <p className="text-slate-500 text-xs">Room No / Type</p>
-                <p className="font-bold text-slate-800">{booking.room?.roomNumber} ({booking.room?.type})</p>
-              </div>
-              <div>
-                <p className="text-slate-500 text-xs">Check In</p>
-                <p className="font-medium text-slate-800">{checkInDate.toLocaleDateString("en-IN")}</p>
-                <p className="text-xs text-slate-500">{checkInDate.toLocaleTimeString("en-IN", {hour: '2-digit', minute:'2-digit'})}</p>
-              </div>
-              <div>
-                <p className="text-slate-500 text-xs">Check Out</p>
-                <p className="font-medium text-slate-800">{checkOutDate.toLocaleDateString("en-IN")}</p>
-                <p className="text-xs text-slate-500">{checkOutDate.toLocaleTimeString("en-IN", {hour: '2-digit', minute:'2-digit'})}</p>
-              </div>
-              <div>
-                <p className="text-slate-500 text-xs">Duration</p>
-                <p className="font-bold text-slate-800">{diffDays} Night(s)</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <table className="w-full text-left border-collapse text-sm mt-6">
-          <thead>
-            <tr className="border-b-2 border-slate-200 text-slate-400 font-semibold">
-              <th className="py-3 font-semibold">Description</th>
-              <th className="py-3 text-center font-semibold">Nights/Qty</th>
-              <th className="py-3 text-right font-semibold">Tariff/Price</th>
-              <th className="py-3 text-right font-semibold">Amount</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {(isCombined || isRoomOnly) && renderRoomItems()}
-            {(isCombined || isRestaurantOnly) && hasRestaurant && renderRestaurantItems()}
-          </tbody>
-        </table>
-
-        <div className="border-t border-slate-200 pt-4 mt-6 flex justify-end">
-          <div className="w-64 text-sm divide-y divide-slate-150">
-            <div className="flex justify-between py-2 font-bold text-slate-900 text-base">
-              <span>Grand Total:</span>
-              <span className="font-mono text-amber-800">₹{total?.toFixed(2)}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="border-t border-slate-100 pt-6 mt-8 text-center text-xs text-slate-400">
-          <p className="font-medium">Thank you for visiting us!</p>
-          <p className="mt-1">Visit again to ROYAL MAJESTIC</p>
-          <div className="flex justify-between items-end mt-8">
-            <div className="text-left">
-              <p className="text-[10px] text-slate-350 uppercase">Guest Signature</p>
-              <div className="w-24 border-b border-dashed border-slate-300 mt-6"></div>
-            </div>
-            <div className="text-right">
-              <p className="text-[10px] text-slate-350 uppercase">Authorized Signatory</p>
-              <p className="text-[10px] font-serif text-slate-600 italic mt-2">Rahul Chandan</p>
-              <div className="w-28 border-b border-dashed border-slate-300 mt-2"></div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    );
-  };
-
-  const PrintInvoiceCard = ({ type }) => {
-    const isRoomOnly = type === 'Room';
-    const isRestaurantOnly = type === 'Restaurant';
-    const isCombined = type === 'Combined';
-
-    const title = isCombined ? "Room Bill" : (isRoomOnly ? "Room Bill" : "Restaurant Bill");
-    const total = isCombined ? booking.totalAmount : (isRoomOnly ? roomTotalAmount : restaurantTotal);
-
-    return (
-      <div className="bg-white text-black p-4 font-sans w-full mx-auto" style={{ maxWidth: '100%' }}>
-        <div className="flex justify-between items-start border-b pb-4 border-gray-300">
-          <div>
-            <h2 className="text-xl font-bold font-serif text-amber-800 uppercase">
-              ROYAL MAJESTIC
-            </h2>
-            <p className="text-xs text-gray-600 font-semibold italic">Premium Hotel & Accommodation</p>
-            <p className="text-xs text-gray-500 max-w-xs">SRIRAM PARA ROAD, NAPIT PARA, Dumka, Jharkhand 814101</p>
-          </div>
-          <div className="text-right">
-            <span className="border border-black px-2 py-0.5 text-xs font-bold uppercase">
-              {title}
-            </span>
-            <p className="text-xs font-bold mt-2">
-              Booking #: {booking._id.substring(booking._id.length - 6)}
-            </p>
-          </div>
-        </div>
-        
-        <div className="my-4 border border-gray-300 p-3 rounded text-xs grid grid-cols-2 gap-2">
-          <p><strong>Guest:</strong> {booking.guests && booking.guests[0] ? booking.guests[0].name : 'N/A'}</p>
-          <p><strong>Mobile:</strong> {booking.guests && booking.guests[0] ? booking.guests[0].phone : 'N/A'}</p>
-          {!isRestaurantOnly && (
-            <>
-              <p><strong>Total Persons:</strong> {booking.guests ? booking.guests.length : 1}</p>
-              <p><strong>Room:</strong> {booking.room?.roomNumber} ({booking.room?.type})</p>
-              <p><strong>Check-In:</strong> {checkInDate.toLocaleString("en-IN")}</p>
-              <p><strong>Check-Out:</strong> {checkOutDate.toLocaleString("en-IN")}</p>
-            </>
-          )}
-        </div>
-        
-        {!isRestaurantOnly && booking.guests && booking.guests.length > 1 && (
-          <div className="mb-4 text-[10px]">
-            <p className="font-bold border-b border-black inline-block mb-1">Additional Guests:</p>
-            <ul className="list-disc pl-4 text-gray-700">
-              {booking.guests.slice(1).map((g, idx) => (
-                <li key={idx}>{g.name} (Age: {g.age}) - {g.idType}: {g.idNumber}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        <table className="w-full text-left border-collapse text-xs mt-4">
-          <thead>
-            <tr className="border-b border-black text-gray-600 font-bold">
-              <th className="py-2">Description</th>
-              <th className="py-2 text-center">Nights/Qty</th>
-              <th className="py-2 text-right">Tariff/Price</th>
-              <th className="py-2 text-right">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(isCombined || isRoomOnly) && renderPrintRoomItems()}
-            {(isCombined || isRestaurantOnly) && hasRestaurant && renderPrintRestaurantItems()}
-          </tbody>
-        </table>
-        
-        <div className="border-t border-black pt-2 mt-4 flex justify-end text-xs font-bold">
-          <p>Grand Total: ₹{total?.toFixed(2)}</p>
-        </div>
-        
-        <div className="border-t border-gray-300 pt-4 mt-6 text-center text-[10px] text-gray-500">
-          <p>Thank you for visiting us!</p>
-        </div>
-      </div>
-    );
-  };
-
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto print-modal-overlay">
-      
-      {/* On-Screen Preview Wrapper */}
-      <div className="bg-slate-900 border border-gold-800/30 rounded-2xl max-w-2xl w-full shadow-2xl relative flex flex-col my-8 no-print">
-        
-        <div className="flex items-center justify-between p-6 border-b border-slate-800 shrink-0">
+    <div className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto print-modal-overlay">
+      <div className="bg-slate-300 rounded-2xl w-full max-w-4xl shadow-2xl relative flex flex-col my-8 no-print h-[90vh]">
+        <div className="flex items-center justify-between p-4 border-b border-slate-400 shrink-0 bg-slate-900 rounded-t-2xl">
           <div className="flex items-center gap-2 text-emerald-400">
             <CheckCircle className="w-5 h-5" />
             <span className="font-semibold text-sm">Invoice Generated Successfully</span>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-200 transition-colors"
-          >
+          <button onClick={onClose} className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-200 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* The PDF Generator captures this ID */}
-        <div className="p-8 overflow-y-auto max-h-[70vh] bg-slate-900">
-          <div id="room-invoice-preview" className="w-full flex flex-col gap-4">
-            {isSplit && hasRestaurant ? (
-              <>
-                <InvoicePreviewCard type="Room" />
-                {/* html2pdf recognizes this class for page breaks */}
-                <div className="html2pdf__page-break"></div>
-                <InvoicePreviewCard type="Restaurant" />
-              </>
-            ) : (
-              <InvoicePreviewCard type="Combined" />
-            )}
-          </div>
+        <div className="p-8 overflow-y-auto bg-slate-400 flex-1 flex flex-col items-center gap-8">
+          {isSplit && hasRestaurant ? (
+            <>
+              <div className="shadow-2xl bg-white p-4 scale-[0.8] origin-top md:scale-100">
+                <InvoiceContent isRestaurantOnly={false} isCombined={false} />
+              </div>
+              <div className="shadow-2xl bg-white p-4 scale-[0.8] origin-top md:scale-100 mt-4">
+                <InvoiceContent isRestaurantOnly={true} isCombined={false} />
+              </div>
+            </>
+          ) : (
+            <div className="shadow-2xl bg-white p-4 scale-[0.8] origin-top md:scale-100">
+              <InvoiceContent isRestaurantOnly={false} isCombined={true} />
+            </div>
+          )}
         </div>
 
-        <div className="p-6 border-t border-slate-800 bg-slate-950 flex items-center justify-end gap-3 rounded-b-2xl shrink-0">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 border border-slate-700 hover:bg-slate-800 text-slate-300 rounded-xl text-sm font-medium transition-all"
-          >
+        <div className="p-4 border-t border-slate-400 bg-slate-900 flex items-center justify-end gap-3 rounded-b-2xl shrink-0">
+          <button onClick={onClose} className="px-4 py-2 border border-slate-700 hover:bg-slate-800 text-slate-300 rounded-xl text-sm font-medium transition-all">
             Close
           </button>
-          
-          <button
-            onClick={handlePrint}
-            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-slate-950 font-bold rounded-xl text-sm transition-all shadow-lg shadow-amber-600/20 active:scale-95"
-          >
+          <button onClick={handlePrint} className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-slate-950 font-bold rounded-xl text-sm transition-all shadow-lg shadow-amber-600/20 active:scale-95">
             <Printer className="w-4 h-4" />
             <span>Print Invoice</span>
           </button>
         </div>
       </div>
 
-      {/* Hidden Print Wrapper - Only visible during window.print() */}
       <div className="print-only hidden w-full">
         {isSplit && hasRestaurant ? (
-          <div>
-            <PrintInvoiceCard type="Room" />
-            {/* Standard CSS page break for browser print */}
-            <div style={{ pageBreakBefore: 'always', height: 0, overflow: 'hidden' }}></div>
-            <PrintInvoiceCard type="Restaurant" />
-          </div>
+          <>
+            <InvoiceContent isRestaurantOnly={false} isCombined={false} />
+            <InvoiceContent isRestaurantOnly={true} isCombined={false} />
+          </>
         ) : (
-          <PrintInvoiceCard type="Combined" />
+          <InvoiceContent isRestaurantOnly={false} isCombined={true} />
         )}
       </div>
-      
     </div>
   );
 }
